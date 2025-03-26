@@ -180,6 +180,31 @@ class Simul():
                 else:
                     self.register_values[rd] = Simul.alu(self.register_values[rs1],bin_dec(imm),funct3) #updates rd with imm+rs1
 
+            elif instr_data[1] == 'S-Type':
+                imm_val = instr[0:7] + instr[20:25]  # imm[11:5] + imm[4:0]
+                rs1 = instr[12:17]
+                rs2 = instr[7:12]
+                addr = (65536 + self.register_values[rs1] + bin_dec(imm_val)) & 0xFFFFFFFC
+                addr_hex = f'000{dec_hex(addr)}'
+                self.data_memory[addr_hex] = self.register_values[rs2]
+
+            elif instr_data[1] == 'B-Type':
+                            imm_val = instr[0] + instr[24] + instr[1:7] + instr[20:24] + '0'
+                            rs1 = instr[12:17]
+                            rs2 = instr[7:12]
+                            if instr_data[0] == 'beq' and self.register_values[rs1] == self.register_values[rs2]:
+                                self.PC += bin_dec(imm_val)
+                            elif instr_data[0] == 'bne' and self.register_values[rs1] != self.register_values[rs2]:
+                                self.PC += bin_dec(imm_val)
+            elif instr_data[1] == 'J-Type':
+                            imm_val = instr[0] + instr[12:20] + instr[11] + instr[1:11] + '0'
+                            rd = instr[20:25]
+                            self.register_values[rd] = self.PC + 4
+                            self.PC += bin_dec(imm_val)
+
+
+        
+
             '''TODO implement S,B,J type instructions...REMEMBER THAT S type instruction loads FROM MEMORY (IMPLEMENTED USING HEX AS KEYS)'''
 
         except: #TODO the implementation for exception handling
