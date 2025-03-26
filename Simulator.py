@@ -18,7 +18,7 @@ def dec_bin(num,length=0):
         if msb == '1':
             newstring = ''
             first = False
-            for i in range(length-1,-1,-1): #length -1 to 0
+            for i in range(length-1,-1,-1):
                 if not first:
                     newstring += string[i]
                     first = True if string[i] == '1' else False
@@ -28,39 +28,45 @@ def dec_bin(num,length=0):
         return msb + string
 
 def dec_hex(num):
-    '''Decimal to hexadecimal conversion'''
-    if num == 0:
-        return '0'
+    '''Decimal to hexadecimal '''
+   
+    if not isinstance(num, int):
+        raise TypeError("invalid input")
+    
     hex_digits = '0123456789abcdef'
     is_negative = False
     if num < 0:
         is_negative = True
-        num = -num
-    
+        num = (1<<32) + num  
     result = ''
-    
+    if num == 0:
+        return '0'
     while num > 0:
         remainder = num % 16
         result = hex_digits[remainder] + result
         num = num // 16
     
     if is_negative:
-        result = '-' + result
+        while len(result)<8:
+            result = '0' + result
     
-    return result[2:]
-    #return hex(num)[2:]
+    return result
 
 def bin_dec(bin_str):
     '''Binary to decimal conversion'''
     decimal = 0
-    power = len(binary_str) - 1 
-    for digit in binary_str:
+    power = len(bin_str) - 1 
+    for digit in bin_str:
         if digit not in ('0', '1'):
             raise ValueError("Invalid binary digit: " + digit)
-        
+
+    for digit in bin_str:
         decimal += int(digit) * (2 ** power)
         power -= 1
-    return int('0b'+decimal ,2)
+
+    if len(bin_str) == 32 and bin_str[0] == '1':
+        decimal -= 2 ** 32
+    return decimal
 
 def hex_dec(hex_str):
     '''Hexadecimal to decimal conversion'''
@@ -77,7 +83,7 @@ def hex_dec(hex_str):
             digit_value = 10 + ord(char) - ord('a')
         decimal += digit_value * (16 ** power)
         power -= 1 
-    return int('0x'+decimal ,16)
+    return decimal 
 
 #classes
 class Simul():
