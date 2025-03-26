@@ -207,8 +207,22 @@ class Simul():
 
             '''TODO implement S,B,J type instructions...REMEMBER THAT S type instruction loads FROM MEMORY (IMPLEMENTED USING HEX AS KEYS)'''
 
-        except: #TODO the implementation for exception handling
-            pass
+       # except: #TODO the implementation for exception handling
+        except KeyError:
+            # Handle invalid register or memory access
+            print(f"Error: Invalid register or memory access in instruction: {instr}")
+            raise
+
+        except ValueError:
+            # Handle invalid immediate values or conversions
+            print(f"Error: Invalid value in instruction: {instr}")
+            raise
+
+        except Exception as e:
+            # Handle any other unexpected errors
+            print(f"Unexpected error executing instruction {instr}: {str(e)}")
+            print(f"PC: {self.PC}, Instruction Type: {instr_data if 'instr_data' in locals() else 'Unknown'}")
+            raise
 
 #main 
 if __name__ == '__main__':
