@@ -29,15 +29,55 @@ def dec_bin(num,length=0):
 
 def dec_hex(num):
     '''Decimal to hexadecimal conversion'''
-    return hex(num)[2:]
+    if num == 0:
+        return '0'
+    hex_digits = '0123456789abcdef'
+    is_negative = False
+    if num < 0:
+        is_negative = True
+        num = -num
+    
+    result = ''
+    
+    while num > 0:
+        remainder = num % 16
+        result = hex_digits[remainder] + result
+        num = num // 16
+    
+    if is_negative:
+        result = '-' + result
+    
+    return result[2:]
+    #return hex(num)[2:]
 
 def bin_dec(bin_str):
     '''Binary to decimal conversion'''
-    return int('0b'+bin_str,2)
+    decimal = 0
+    power = len(binary_str) - 1 
+    for digit in binary_str:
+        if digit not in ('0', '1'):
+            raise ValueError("Invalid binary digit: " + digit)
+        
+        decimal += int(digit) * (2 ** power)
+        power -= 1
+    return int('0b'+decimal ,2)
 
 def hex_dec(hex_str):
     '''Hexadecimal to decimal conversion'''
-    return int('0x'+hex_str,16)
+    hex_str = hex_str.lower()
+    decimal = 0
+    hex_digits = '0123456789abcdef'
+    power = len(hex_str) - 1     
+    for char in hex_str:
+        if char not in hex_digits:
+            raise ValueError("Invalid hexadecimal digit: " + char)
+        if char.isdigit():
+            digit_value = int(char)
+        else: 
+            digit_value = 10 + ord(char) - ord('a')
+        decimal += digit_value * (16 ** power)
+        power -= 1 
+    return int('0x'+decimal ,16)
 
 #classes
 class Simul():
