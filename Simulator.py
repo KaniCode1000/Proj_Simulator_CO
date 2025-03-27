@@ -1,5 +1,4 @@
 import sys
-
 def dec_bin_u(num, length=0):
     '''unsigned dec to bin'''
     bin = format(num, 'b')
