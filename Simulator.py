@@ -82,7 +82,7 @@ def bin_dec(bin_str):
         decimal -= 2 ** length
     return decimal
 
-print(bin_dec('101'))#deal signed .it is left 
+# print(bin_dec('101'))#deal signed .it is left 
 
 # def hex_dec(hex_str):
 #     '''Hexadecimal to decimal conversion'''
@@ -105,7 +105,9 @@ print(bin_dec('101'))#deal signed .it is left
 class Simul:
     def __init__(self, data):
         self.register_values = {dec_bin_u(x, 5): 0 for x in range(0, 32)}
-        self.PC = 0
+        self.register_values['00010'] = 380
+        self.PC = 4
+        self.pc_add = True
         self.instructions = data
         self.data_memory = {f'000{dec_hex(x)}': 0 for x in range(65536, 65536 + (32*4), 4)}
         self.riscv_encoding_map = {
@@ -141,7 +143,7 @@ class Simul:
         
     @staticmethod
     def alu(val1, val2, funct3):
-        print(funct3)
+        # print(funct3)
         '''ALU operations'''
         if funct3 == '000':  # add/addi
             return val1 + val2
@@ -158,7 +160,7 @@ class Simul:
         else:
             raise ValueError(f"wrong f3: {funct3}")
 
-    def printcol(self, filename):
+    def printrow(self, filename):
         '''Writes the final state of registers'''
         pc = Simul.prep_string(dec_bin_u(self.PC, 32))
         col = pc + ' '
@@ -170,6 +172,16 @@ class Simul:
         with open(filename, 'a') as f:
             f.write(col + '\n')
 
+    def test_printrow(self,filename):
+        pc = self.PC
+        col = str(pc) + ' '
+        for reg in range(32):
+            reg_name = dec_bin_u(reg, 5)
+            reg_val = self.register_values[reg_name]
+            col += str(reg_val) + ' '
+        with open(filename, 'a') as f:
+            f.write(col + '\n')
+
     def write_data_memory(self, filename):
         '''Writes the final state of complete data memory'''
         with open(filename, 'a') as f:
@@ -177,7 +189,7 @@ class Simul:
                 val = self.data_memory[addr]
                 hex_addr = Simul.prep_string(addr, binary=False)
                 final_val = Simul.prep_string(dec_bin_s(val, 32))
-                f.write(hex_addr + ': ' + final_val + '\n')
+                f.write(hex_addr + ':' + final_val + '\n')
 
     def instr_type(self, instr_ip):
         '''Returns a tuple with (instruction_name,instruction_type)'''
@@ -216,7 +228,7 @@ class Simul:
                 if rd != '00000':
                     self.register_values[rd] = result
         
-                self.PC += 4
+                self.pc_add = True
 
             elif instr_type == 'I-Type':
                 imm_val = instr[0:12]
@@ -229,19 +241,20 @@ class Simul:
                     imm_dec = bin_dec(imm_val)
                     addr = f'000{dec_hex(65536 + self.register_values[rs1] + imm_dec)}'
                     self.register_values[rd] = self.data_memory.get(addr, 0)
-                    self.PC += 4
+                    self.pc_add = True
                 
                 elif instr_name == 'jalr':
                     self.register_values[rd] = self.PC + 4
                     imm_dec = bin_dec(imm_val)
-                    self.PC = (self.register_values[rs1] + imm_dec) & ~1
+                    self.pc_add = False
+                    self.PC = (self.register_values[rs1] + imm_dec)&~1
                 
                 elif instr_name == 'addi':
                     imm_dec = bin_dec(imm_val)
-                    print(imm_dec)
+                    # print(imm_dec)
                     self.register_values[rd] = self.alu(self.register_values[rs1], imm_dec, funct3)
         
-                    self.PC += 4
+                    self.pc_add = True
                 
                 else:
                     raise ValueError(f"Unsupported I-Type instruction: {instr_name}")
@@ -258,7 +271,7 @@ class Simul:
                 
                 self.data_memory[addr_hex] = self.register_values[rs2]
                 
-                self.PC += 4
+                self.pc_add = True
 
             elif instr_type == 'B-Type':
                 imm_val = instr[0] + instr[24] + instr[1:7] + instr[20:24] + '0'
@@ -270,15 +283,17 @@ class Simul:
                 
                 if instr_name == 'beq':
                     if self.register_values[rs1] == self.register_values[rs2]:
-                        self.PC += imm_dec
+                        self.PC += imm_dec 
+                        self.pc_add = False
                     else:
-                        self.PC += 4
+                        self.pc_add = True
                 
                 elif instr_name == 'bne':
                     if self.register_values[rs1] != self.register_values[rs2]:
                         self.PC += imm_dec
+                        self.pc_add = False
                     else:
-                        self.PC += 4
+                        self.pc_add = True
 
                 if imm_dec == 0:
                     return "terminate"
@@ -290,42 +305,47 @@ class Simul:
                 self.register_values[rd] = self.PC + 4
                 
                 self.PC += imm_dec
+                self.pc_add = False
 
             else:
                 raise ValueError(f"Unsupported instruction type: {instr_type}")
 
         except Exception as e:
-            print(f"Error executing instruction {instr}: {str(e)}")
-            print(f"Instruction Type: {instr_type}, Instruction Name: {instr_name}")
-            raise
+            # print(f"Error executing instruction {instr}: {str(e)}")
+            # print(f"Instruction Type: {instr_type}, Instruction Name: {instr_name}")
+            raise Exception(f"Error executing instruction {instr}: {str(e)} \nInstruction Type: {instr_type}, Instruction Name: {instr_name}")
 
 
 def main(input_file, output_file):
    
     try:
         sim = Simul.load_file(input_file)
-        print(f"Loaded {len(sim.instructions)} instructions")
+        # print(f"Loaded {len(sim.instructions)} instructions")
         with open(output_file, 'w') as f:
             f.write('') 
 
         while sim.PC < len(sim.instructions) * 4:
 
-            current_instr = sim.instructions[sim.PC // 4]
-            print(f"Executing instruction at PC {sim.PC+4}: {current_instr}")
+            current_instr = sim.instructions[(sim.PC // 4)-1]
+            # print(f"Executing instruction at PC {sim.PC+4}: {current_instr}")
             terminate = sim.execute(current_instr)
             if terminate == "terminate":
                 break
 
-            sim.printcol(output_file)
+            sim.printrow(output_file)
+            sim.test_printrow(output_file[0:-4]+'_r.txt')
+            if sim.pc_add:
+                sim.PC += 4
  
-        sim.printcol(output_file)
-        print(sim.register_values)
+        sim.printrow(output_file)
+        sim.test_printrow(output_file[0:-4]+'_r.txt')
+        # print(sim.register_values)
         sim.write_data_memory(output_file)
     
     except Exception as e:
         print(f"Error in simulation: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        # import traceback
+        # traceback.print_exc()
 
 if __name__ == '__main__':
    
