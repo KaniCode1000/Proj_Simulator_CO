@@ -67,19 +67,19 @@ def dec_hex(num):
 
 
 def bin_dec(bin_str):
-    '''Binary to decimal conversion'''
+    if not all(digit in ('0', '1') for digit in bin_str):
+        raise ValueError("Invalid binary string: " + bin_str)
+
+    length = len(bin_str)
+    if length == 0:
+        raise ValueError("Binary string is empty")
     decimal = 0
-    power = len(bin_str) - 1 
-    for digit in bin_str:
-        if digit not in ('0', '1'):
-            raise ValueError("Invalid binary digit: " + digit)
-
-    for digit in bin_str:
-        decimal += int(digit) * (2 ** power)
+    power = length - 1
+    for i in range(length):
+        decimal += int(bin_str[i]) * (2 ** power)
         power -= 1
-
-    if len(bin_str) == 32 and bin_str[0] == '1':
-        decimal -= 2 ** 32
+    if bin_str[0] == '1':  # Negative number in two's complement
+        decimal -= 2 ** length
     return decimal
 
 print(bin_dec('101'))#deal signed .it is left 
