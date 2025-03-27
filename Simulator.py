@@ -1,43 +1,57 @@
-#modules
+import sys
 
-#functions
-def dec_bin(num,length=0):
-        '''returns a binary representation of the decimal number in string format (in 2 complement representation)
-        can perform sign extension as well'''
-        string = ''
-        msb = '0' if num >= 0 else '1'
-        length -= 1
-        num = abs(num)
-        while num!=0:
-            bit = num&1
-            string += str(bit)
-            num >>= 1
-        if length != 0:
-            string += '0'*(length-len(string))
-        string = string[::-1]
-        if msb == '1':
-            newstring = ''
-            first = False
-            for i in range(length-1,-1,-1):
-                if not first:
-                    newstring += string[i]
-                    first = True if string[i] == '1' else False
-                else:
-                    newstring += '1' if string[i] == '0' else '0'                
-            string = newstring[::-1]
-        return msb + string
+def dec_bin_u(num, length=0):
+    '''unsigned dec to bin'''
+    bin = format(num, 'b')
+    bin = '0'*(length - len(bin)) + bin
+    return bin
+
+def dec_bin_s(num, length =1):
+    if num>=0:
+        return dec_bin_u(num, length)
+    flip_2s = num + 2**length
+    return dec_bin_u(flip_2s, length)
+
+# def dec_bin(num, length=0):
+#     '''returns a binary representation of the decimal number in string format (in 2 complement representation)
+#     can perform sign extension as well'''
+#     string = ''
+#     msb = '0' if num >= 0 else '1'
+#     length -= 1
+#     num = abs(num)
+#     while num != 0:
+#         bit = num & 1
+#         print(num, bit)
+#         num >>= 1
+#     if length != 0:
+#         string += '0' * (length - len(string))
+#     string = string[::-1]
+#     if msb == '1':
+#         newstring = ''
+#         first = False
+#         for i in range(length - 1, -1, -1):
+#             if not first:
+#                 newstring += string[i]
+#                 first = True if string[i] == '1' else False
+#             else:
+#                 newstring += '1' if string[i] == '0' else '0'                
+#         string = newstring[::-1]
+#     # print(msb, string)
+    
+#     return msb + string
+
+
 
 def dec_hex(num):
     '''Decimal to hexadecimal '''
-   
     if not isinstance(num, int):
         raise TypeError("invalid input")
     
-    hex_digits = '0123456789abcdef'
+    hex_digits = '0123456789ABCDEF'
     is_negative = False
     if num < 0:
         is_negative = True
-        num = (1<<32) + num  
+        num = (1 << 32) + num  
     result = ''
     if num == 0:
         return '0'
@@ -47,10 +61,11 @@ def dec_hex(num):
         num = num // 16
     
     if is_negative:
-        while len(result)<8:
+        while len(result) < 8:
             result = '0' + result
     
     return result
+
 
 def bin_dec(bin_str):
     '''Binary to decimal conversion'''
@@ -68,180 +83,262 @@ def bin_dec(bin_str):
         decimal -= 2 ** 32
     return decimal
 
-def hex_dec(hex_str):
-    '''Hexadecimal to decimal conversion'''
-    hex_str = hex_str.lower()
-    decimal = 0
-    hex_digits = '0123456789abcdef'
-    power = len(hex_str) - 1     
-    for char in hex_str:
-        if char not in hex_digits:
-            raise ValueError("Invalid hexadecimal digit: " + char)
-        if char.isdigit():
-            digit_value = int(char)
-        else: 
-            digit_value = 10 + ord(char) - ord('a')
-        decimal += digit_value * (16 ** power)
-        power -= 1 
-    return decimal 
+print(bin_dec('101'))#deal signed .it is left 
 
-#classes
-class Simul():
-    def __init__(self,data):
-        self.register_values = {dec_bin(x,5):0 for x in range(0,32)} #dictionary of binary_names:values stored
+# def hex_dec(hex_str):
+#     '''Hexadecimal to decimal conversion'''
+#     hex_str = hex_str.lower()
+#     decimal = 0
+#     hex_digits = '0123456789abcdef'
+#     power = len(hex_str) - 1     
+#     for char in hex_str:
+#         if char not in hex_digits:
+#             raise ValueError("Invalid hexadecimal digit: " + char)
+#         if char.isdigit():
+#             digit_value = int(char)
+#         else: 
+#             digit_value = 10 + ord(char) - ord('a')
+#         decimal += digit_value * (16 ** power)
+#         power -= 1 
+#     return decimal 
+
+# classes
+class Simul:
+    def __init__(self, data):
+        self.register_values = {dec_bin_u(x, 5): 0 for x in range(0, 32)}
         self.PC = 0
-        self.instructions = data #list of all lines
-        self.data_memory = {f'000{dec_hex(x)}':0 for x in range(65536,65536+32)} #starts from 65536 as per test cases
+        self.instructions = data
+        self.data_memory = {f'000{dec_hex(x)}': 0 for x in range(65536, 65536 + (32*4), 4)}
         self.riscv_encoding_map = {
-                                ("0110011", "000", "0000000"): ("add","R-Type"),
-                                ("0110011", "000", "0100000"): ("sub","R-Type"),
-                                ("0110011", "111", "0000000"): ("and","R-Type"),
-                                ("0110011", "110", "0000000"): ("or","R-Type"),
-                                ("0110011", "010", "0000000"): ("slt","R-Type"),
-                                ("0110011", "101", "0000000"): ("srl","R-Type"),
-                                ("0010011", "000", None): ("addi","I-Type"),
-                                ("1100111", "000", None): ("jalr","I-Type"),
-                                ("0000011", "010", None): ("lw","I-Type"),
-                                ("0100011", "010", None): ("sw","S-Type"),
-                                ("1100011", "000", None): ("beq","B-Type"),
-                                ("1100011", "001", None): ("bne","B-Type"),
-                                ("1101111", None, None): ("jal","J-Type")
-                            }
-    
+            ("0110011", "000", "0000000"): ("add", "R-Type"),
+            ("0110011", "000", "0100000"): ("sub", "R-Type"),
+            ("0110011", "111", "0000000"): ("and", "R-Type"),
+            ("0110011", "110", "0000000"): ("or", "R-Type"),
+            ("0110011", "010", "0000000"): ("slt", "R-Type"),
+            ("0110011", "101", "0000000"): ("srl", "R-Type"),
+            ("0010011", "000", None): ("addi", "I-Type"),
+            ("1100111", "000", None): ("jalr", "I-Type"),
+            ("0000011", "010", None): ("lw", "I-Type"),
+            ("0100011", "010", None): ("sw", "S-Type"),
+            ("1100011", "000", None): ("beq", "B-Type"),
+            ("1100011", "001", None): ("bne", "B-Type"),
+            ("1101111", None, None): ("jal", "J-Type")
+        }
+
     @staticmethod
-    def prep_string(string,binary=True):
+    def prep_string(string, binary=True):
         '''Prepares the binary/hexadecimal string by prepending with 0b/0x respectively'''
         if binary:
-            return '0b'+string
-        return '0x'+string
+            return '0b' + string
+        return '0x' + string
 
     @classmethod
-    def load_file(cls,filename):
-        '''Loads the file and simple returns a list of instructions (data)'''
-        with open(filename,'r') as f:
-            data = [x for x in f.readlines() if x.strip() != '']
-        return cls(data)
-
+    def load_file(cls, filename):
+        '''Loads the file and returns a list of instructions'''
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+            instr = [l.strip() for l in lines if l.strip()]
+            return cls(instr)
+        
     @staticmethod
-    def alu(val1,val2,funct3):
-        '''mimics the operation of alu, give it funct3 and values and it will return the value after performing the corresponding operation!'''
-        funcs = {'000':lambda x,y:x+y,'001':lambda x,y:x-y,'010':lambda x,y:x&y,'011':lambda x,y:x|y,'101':lambda x,y:1 if x<y else 0}
-        return funcs[funct3](val1,val2)
-
-    def writeall(self,filename):
-        '''Writes the final state of registers (to be called after every instruction execution)'''
-        string = Simul.prep_string(dec_bin(self.PC,length=32))+' '
-        with open(filename,'a') as f:
-            for x in range(0,32):
-                string += Simul.prep_string(dec_bin(self.register_values[dec_bin(x,5)],32))+' '
-            f.write(string + '\n')
-
-    def write_data_memory(self,filename):
-        '''Writes the final state of complete data memory'''
-        with open(filename,'a') as f:
-            for key in self.data_memory:
-                string = f'{Simul.prep_string(key,binary = False)}: {Simul.prep_string(dec_bin(self.data_memory[key],32))}'
-                f.write(string + '\n')
-
-    def instr_type(self,instr_bin):
-        '''Returns a tuple with (instruction_name,instruction_type)'''
-        keys = list(self.riscv_encoding_map.keys())
-        opcode = instr_bin[-7:]
-        funct3 = intsr_bin[-15:-12]
-        funct7 = instr_bin[0:7]
-        if (opcode,funct3,funct7) in keys:
-            return self.riscv_encoding_map[(opcode,funct3,funct7)]
-        elif (opcode,funct3,funct7) in keys:
-            return self.riscv_encoding_map[(opcode,funct3,None)]
-        elif (opcode,None,None) in keys:
-            return self.riscv_encoding_map[(opcode,None,None)]
+    def alu(val1, val2, funct3):
+        print(funct3)
+        '''ALU operations'''
+        if funct3 == '000':  # add/addi
+            return val1 + val2
+        elif funct3 == '001':  # sub (R)
+            return val1 - val2
+        elif funct3 == '111':  # and/andi
+            return val1 & val2
+        elif funct3 == '110':  # or/ori
+            return val1 | val2
+        elif funct3 == '101':  # srl/srli
+            return val1 >> val2  
+        elif funct3 == '010':  # slt/slti
+            return 1 if val1 < val2 else 0
         else:
-            raise Exception("Incorrect/ Invalid Instruction")
-    
-    def execute(self,instr): #TODO
-        '''Input: Binary instruction
-        Does: Executes the instruction'''
-        try:
-            instr_data = self.instr_type(instr) #tuple of format (instruction_name,instruction_type)
+            raise ValueError(f"wrong f3: {funct3}")
 
-            if instr_data[1] == 'R-type': #perform corresponding alu operation, write value in rd
-                rs2,rs1 = instr[7:12],instr[12:17]
-                funct3 = instr[17:20]
-                rd = instr[20:25]
-                if instr_data[0] == 'sub':
-                    funct3 = '001'
-                #update the rd register with the corresponding value from rs1 and rs2 and perform the function using alu
-                self.register_values[rd] = Simul.alu(self.register_values[rs1],self.register_values[rs2],funct3)
-            
-            elif instr_data[1] == 'I-type':
+    def printcol(self, filename):
+        '''Writes the final state of registers'''
+        pc = Simul.prep_string(dec_bin_u(self.PC, 32))
+        col = pc + ' '
+        for reg in range(32):
+            reg_name = dec_bin_u(reg, 5)
+            reg_val = self.register_values[reg_name]
+            reg_str = Simul.prep_string(dec_bin_s(reg_val, 32))
+            col += reg_str + ' '
+        with open(filename, 'a') as f:
+            f.write(col + '\n')
+
+    def write_data_memory(self, filename):
+        '''Writes the final state of complete data memory'''
+        with open(filename, 'a') as f:
+            for addr in sorted(self.data_memory.keys()):
+                val = self.data_memory[addr]
+                hex_addr = Simul.prep_string(addr, binary=False)
+                final_val = Simul.prep_string(dec_bin_s(val, 32))
+                f.write(hex_addr + ': ' + final_val + '\n')
+
+    def instr_type(self, instr_ip):
+        '''Returns a tuple with (instruction_name,instruction_type)'''
+        opcode = instr_ip[-7:]
+        funct3 = instr_ip[-15:-12]
+        funct7 = instr_ip[0:7] if opcode == '0110011' else None
+        
+        if (opcode, funct3, funct7) in self.riscv_encoding_map:
+            return self.riscv_encoding_map[(opcode, funct3, funct7)]
+        elif (opcode, funct3, None) in self.riscv_encoding_map:
+            return self.riscv_encoding_map[(opcode, funct3, None)]
+        elif (opcode, None, None) in self.riscv_encoding_map:
+            return self.riscv_encoding_map[(opcode, None, None)]
+        else:
+            raise ValueError(f"Invalid instr:oc={opcode},f3={funct3},f7={funct7}")
+
+    def execute(self, instr): 
+        try:
+            instr_name, instr_type = self.instr_type(instr)
+
+            if instr_type == 'R-Type':
+                funct7 = instr[0:7]   
+                rs2 = instr[7:12]   
+                rs1 = instr[12:17]  
+                funct3 = instr[17:20] 
+                rd = instr[20:25]  
+                
+                rs1_val = self.register_values.get(rs1, 0)
+                rs2_val = self.register_values.get(rs2, 0)
+                
+                if funct7 == '0100000' and funct3 == '000':  # sub
+                    result = rs1_val - rs2_val
+                else:
+                    result = self.alu(rs1_val, rs2_val, funct3)
+                
+                if rd != '00000':
+                    self.register_values[rd] = result
+        
+                self.PC += 4
+
+            elif instr_type == 'I-Type':
                 imm_val = instr[0:12]
                 rs1 = instr[12:17]
                 funct3 = instr[17:20]
                 rd = instr[20:25]
-                if instr_data[0] == 'lw':
-                    self.register_values[rd] = self.data_memory[f'000{65536+self.register_values[rs1]+bin_dec(imm_val)}']
-                elif instr_data[0] == 'jalr':
-                    self.register_values[rd] = Simul.alu(self.PC,4,funct3) #stores PC+4 to rd field
-                    self.PC += bin_dec(imm_val) #updates pc value
+                
+                if instr_name == 'lw':
+                    # Sign extend the immediate value
+                    imm_dec = bin_dec(imm_val)
+                    addr = f'000{dec_hex(65536 + self.register_values[rs1] + imm_dec)}'
+                    self.register_values[rd] = self.data_memory.get(addr, 0)
+                    self.PC += 4
+                
+                elif instr_name == 'jalr':
+                    self.register_values[rd] = self.PC + 4
+                    imm_dec = bin_dec(imm_val)
+                    self.PC = (self.register_values[rs1] + imm_dec) & ~1
+                
+                elif instr_name == 'addi':
+                    imm_dec = bin_dec(imm_val)
+                    print(imm_dec)
+                    self.register_values[rd] = self.alu(self.register_values[rs1], imm_dec, funct3)
+        
+                    self.PC += 4
+                
                 else:
-                    self.register_values[rd] = Simul.alu(self.register_values[rs1],bin_dec(imm),funct3) #updates rd with imm+rs1
+                    raise ValueError(f"Unsupported I-Type instruction: {instr_name}")
 
-            elif instr_data[1] == 'S-Type':
-                imm_val = instr[0:7] + instr[20:25]  # imm[11:5] + imm[4:0]
+            elif instr_type == 'S-Type':
+                imm_val = instr[0:7] + instr[20:25]  
                 rs1 = instr[12:17]
                 rs2 = instr[7:12]
-                addr = (65536 + self.register_values[rs1] + bin_dec(imm_val)) & 0xFFFFFFFC
+                
+                # Sign extend the immediate value
+                imm_dec = bin_dec(imm_val)
+                addr = 65536 + self.register_values[rs1] + imm_dec
                 addr_hex = f'000{dec_hex(addr)}'
+                
                 self.data_memory[addr_hex] = self.register_values[rs2]
+                
+                self.PC += 4
 
-            elif instr_data[1] == 'B-Type':
-                            imm_val = instr[0] + instr[24] + instr[1:7] + instr[20:24] + '0'
-                            rs1 = instr[12:17]
-                            rs2 = instr[7:12]
-                            if instr_data[0] == 'beq' and self.register_values[rs1] == self.register_values[rs2]:
-                                self.PC += bin_dec(imm_val)
-                            elif instr_data[0] == 'bne' and self.register_values[rs1] != self.register_values[rs2]:
-                                self.PC += bin_dec(imm_val)
-            elif instr_data[1] == 'J-Type':
-                            imm_val = instr[0] + instr[12:20] + instr[11] + instr[1:11] + '0'
-                            rd = instr[20:25]
-                            self.register_values[rd] = self.PC + 4
-                            self.PC += bin_dec(imm_val)
+            elif instr_type == 'B-Type':
+                imm_val = instr[0] + instr[24] + instr[1:7] + instr[20:24] + '0'
+                rs1 = instr[12:17]
+                rs2 = instr[7:12]
+                
+                # Sign extend the immediate value
+                imm_dec = bin_dec(imm_val)
+                
+                if instr_name == 'beq':
+                    if self.register_values[rs1] == self.register_values[rs2]:
+                        self.PC += imm_dec
+                    else:
+                        self.PC += 4
+                
+                elif instr_name == 'bne':
+                    if self.register_values[rs1] != self.register_values[rs2]:
+                        self.PC += imm_dec
+                    else:
+                        self.PC += 4
 
+                if imm_dec == 0:
+                    return "terminate"
+                    
+            elif instr_type == 'J-Type':
+                imm_val = instr[0] + instr[12:20] + instr[11] + instr[1:11] + '0'
+                rd = instr[20:25]
+                imm_dec = bin_dec(imm_val)
+                self.register_values[rd] = self.PC + 4
+                
+                self.PC += imm_dec
 
-        
-
-            '''TODO implement S,B,J type instructions...REMEMBER THAT S type instruction loads FROM MEMORY (IMPLEMENTED USING HEX AS KEYS)'''
-
-       # except: #TODO the implementation for exception handling
-        except KeyError:
-            # Handle invalid register or memory access
-            print(f"Error: Invalid register or memory access in instruction: {instr}")
-            raise
-
-        except ValueError:
-            # Handle invalid immediate values or conversions
-            print(f"Error: Invalid value in instruction: {instr}")
-            raise
+            else:
+                raise ValueError(f"Unsupported instruction type: {instr_type}")
 
         except Exception as e:
-            # Handle any other unexpected errors
-            print(f"Unexpected error executing instruction {instr}: {str(e)}")
-            print(f"PC: {self.PC}, Instruction Type: {instr_data if 'instr_data' in locals() else 'Unknown'}")
+            print(f"Error executing instruction {instr}: {str(e)}")
+            print(f"Instruction Type: {instr_type}, Instruction Name: {instr_name}")
             raise
 
-#main 
+
+def main(input_file, output_file):
+   
+    try:
+        sim = Simul.load_file(input_file)
+        print(f"Loaded {len(sim.instructions)} instructions")
+        with open(output_file, 'w') as f:
+            f.write('') 
+
+        while sim.PC < len(sim.instructions) * 4:
+
+            current_instr = sim.instructions[sim.PC // 4]
+            print(f"Executing instruction at PC {sim.PC+4}: {current_instr}")
+            terminate = sim.execute(current_instr)
+            if terminate == "terminate":
+                break
+
+            sim.printcol(output_file)
+ 
+        sim.printcol(output_file)
+        print(sim.register_values)
+        sim.write_data_memory(output_file)
+    
+    except Exception as e:
+        print(f"Error in simulation: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
 if __name__ == '__main__':
-    inp_filename = None #TODO
-    out_filename = None #TODO
-    sim = Simul.load_file(filename)
+   
+    if len(sys.argv) == 1:
+        input_file = 'input.txt'
+        output_file = 'output.txt'
+    elif len(sys.argv) == 3:
 
-    #preprocessing
-    with open(out_filename,'w') as f:
-        f.write('')
+        input_file = sys.argv[1]
+        output_file = sys.argv[2]
+    else:
+        print("Usage: python r5_test.py [input_file output_file]")
+        sys.exit(1)
 
-    #actual implementation
-    for instr in sim.instructions:
-        sim.writeall(out_filename)
-
-    #writing data memory part TODO
+    main(input_file, output_file)
