@@ -106,8 +106,7 @@ class Simul:
     def __init__(self, data):
         self.register_values = {dec_bin_u(x, 5): 0 for x in range(0, 32)}
         self.register_values['00010'] = 380
-        self.PC = 4
-        self.pc_add = True
+        self.PC = 0
         self.instructions = data
         self.data_memory = {f'000{dec_hex(x)}': 0 for x in range(65536, 65536 + (32*4), 4)}
         self.riscv_encoding_map = {
@@ -228,7 +227,7 @@ class Simul:
                 if rd != '00000':
                     self.register_values[rd] = result
         
-                self.pc_add = True
+                self.PC += 4
 
             elif instr_type == 'I-Type':
                 imm_val = instr[0:12]
@@ -241,20 +240,18 @@ class Simul:
                     imm_dec = bin_dec(imm_val)
                     addr = f'000{dec_hex(65536 + self.register_values[rs1] + imm_dec)}'
                     self.register_values[rd] = self.data_memory.get(addr, 0)
-                    self.pc_add = True
+                    self.PC += 4
                 
                 elif instr_name == 'jalr':
                     self.register_values[rd] = self.PC + 4
                     imm_dec = bin_dec(imm_val)
-                    self.pc_add = False
                     self.PC = (self.register_values[rs1] + imm_dec)&~1
                 
                 elif instr_name == 'addi':
                     imm_dec = bin_dec(imm_val)
                     # print(imm_dec)
                     self.register_values[rd] = self.alu(self.register_values[rs1], imm_dec, funct3)
-        
-                    self.pc_add = True
+                    self.PC += 4
                 
                 else:
                     raise ValueError(f"Unsupported I-Type instruction: {instr_name}")
@@ -271,7 +268,7 @@ class Simul:
                 
                 self.data_memory[addr_hex] = self.register_values[rs2]
                 
-                self.pc_add = True
+                self.PC += 4
 
             elif instr_type == 'B-Type':
                 imm_val = instr[0] + instr[24] + instr[1:7] + instr[20:24] + '0'
@@ -284,16 +281,14 @@ class Simul:
                 if instr_name == 'beq':
                     if self.register_values[rs1] == self.register_values[rs2]:
                         self.PC += imm_dec 
-                        self.pc_add = False
                     else:
-                        self.pc_add = True
+                        self.PC += 4
                 
                 elif instr_name == 'bne':
                     if self.register_values[rs1] != self.register_values[rs2]:
                         self.PC += imm_dec
-                        self.pc_add = False
                     else:
-                        self.pc_add = True
+                        self.PC += 4
 
                 if imm_dec == 0:
                     return "terminate"
@@ -305,7 +300,6 @@ class Simul:
                 self.register_values[rd] = self.PC + 4
                 
                 self.PC += imm_dec
-                self.pc_add = False
 
             else:
                 raise ValueError(f"Unsupported instruction type: {instr_type}")
@@ -326,7 +320,7 @@ def main(input_file, output_file):
 
         while sim.PC < len(sim.instructions) * 4:
 
-            current_instr = sim.instructions[(sim.PC // 4)-1]
+            current_instr = sim.instructions[(sim.PC // 4)]
             # print(f"Executing instruction at PC {sim.PC+4}: {current_instr}")
             terminate = sim.execute(current_instr)
             if terminate == "terminate":
@@ -334,8 +328,6 @@ def main(input_file, output_file):
 
             sim.printrow(output_file)
             sim.test_printrow(output_file[0:-4]+'_r.txt')
-            if sim.pc_add:
-                sim.PC += 4
  
         sim.printrow(output_file)
         sim.test_printrow(output_file[0:-4]+'_r.txt')
