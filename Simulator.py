@@ -81,6 +81,15 @@ def bin_dec(bin_str):
     if bin_str[0] == '1':  # Negative number in two's complement
         decimal -= 2 ** length
     return decimal
+def rvrs(val):
+    """Reverses the bits of a 32-bit integer."""
+    string = format(val & 0xFFFFFFFF, '032b') 
+    rev = string[::-1]
+    return int(rev, 2)
+
+def halt():
+    print("Simulation halted.")
+    sys.exit(0)
 
 # print(bin_dec('101'))#deal signed .it is left 
 
@@ -300,6 +309,13 @@ class Simul:
                 self.register_values[rd] = self.PC + 4
                 
                 self.PC += imm_dec
+            elif instr.startswith('rvrs'):
+                i, register = instr.split()
+                regbin = dec_bin_u(int(register), 5)
+                self.register_values[regbin] = rvrs(self.register_values[regbin])
+                self.PC += 4
+            elif instr == 'halt':
+                halt()
 
             else:
                 raise ValueError(f"Unsupported instruction type: {instr_type}")
