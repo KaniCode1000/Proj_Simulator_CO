@@ -87,9 +87,7 @@ def rvrs(val):
     rev = string[::-1]
     return int(rev, 2)
 
-def halt():
-    print("Simulation halted.")
-    sys.exit(0)
+
 
 # print(bin_dec('101'))#deal signed .it is left 
 
@@ -314,8 +312,7 @@ class Simul:
                 regbin = dec_bin_u(int(register), 5)
                 self.register_values[regbin] = rvrs(self.register_values[regbin])
                 self.PC += 4
-            elif instr == 'halt':
-                halt()
+            
 
             else:
                 raise ValueError(f"Unsupported instruction type: {instr_type}")
