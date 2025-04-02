@@ -204,8 +204,8 @@ class Simul:
                 funct3 = instr[17:20]
                 rd = instr[20:25]
 
-                rs1_val = self.register_values.get(rs1, 0)
-                rs2_val = self.register_values.get(rs2, 0)
+                rs1_val = self.register_values[rs1]
+                rs2_val = self.register_values[rs2]
 
                 if funct7 == '0100000' and funct3 == '000':  # sub
                     result = rs1_val - rs2_val
@@ -227,6 +227,11 @@ class Simul:
                     # Sign extend the immediate value
                     imm_dec = bin_dec(imm_val)
                     addr = f'000{dec_hex(self.register_values[rs1] + imm_dec)}'
+                    if addr not in self.data_memory:
+                        value = imm_dec + self.register_values[rs1]
+                        if value not in range(0,381):
+                            print(value)
+                            raise Exception('Invalid Memory Access')
                     self.register_values[rd] = self.data_memory[addr]
                     self.PC += 4
 
@@ -256,6 +261,9 @@ class Simul:
                 imm_dec = bin_dec(imm_val)
                 addr =  self.register_values[rs1] + imm_dec
                 addr_hex = f'000{dec_hex(addr)}'
+                if addr_hex not in self.data_memory:
+                        if addr not in range(0,381):
+                            raise Exception('Invalid Memory Access')
 
                 self.data_memory[addr_hex] = self.register_values[rs2]
 
