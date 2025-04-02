@@ -6,7 +6,7 @@ def dec_bin_u(num, length=0):
     bin = '0'*(length - len(bin)) + bin
     return bin
 
-def dec_bin_s(num, length =1):
+def dec_bin_s(num, length=1):
     if num>=0:
         return dec_bin_u(num, length)
     flip_2s = num + 2**length
@@ -57,29 +57,7 @@ def rvrs(val):
     string = format(val & 0xFFFFFFFF, '032b')
     rev = string[::-1]
     return int(rev, 2)
-
-
-
-# print(bin_dec('101'))#deal signed .it is left
-
-# def hex_dec(hex_str):
-#     '''Hexadecimal to decimal conversion'''
-#     hex_str = hex_str.lower()
-#     decimal = 0
-#     hex_digits = '0123456789abcdef'
-#     power = len(hex_str) - 1
-#     for char in hex_str:
-#         if char not in hex_digits:
-#             raise ValueError("Invalid hexadecimal digit: " + char)
-#         if char.isdigit():
-#             digit_value = int(char)
-#         else:
-#             digit_value = 10 + ord(char) - ord('a')
-#         decimal += digit_value * (16 ** power)
-#         power -= 1
-#     return decimal
-
-# classes
+#classes
 class Simul:
     def __init__(self, data):
         self.register_values = {dec_bin_u(x, 5): 0 for x in range(0, 32)}
@@ -100,7 +78,12 @@ class Simul:
             ("0100011", "010", None): ("sw", "S-Type"),
             ("1100011", "000", None): ("beq", "B-Type"),
             ("1100011", "001", None): ("bne", "B-Type"),
-            ("1101111", None, None): ("jal", "J-Type")
+            ("1101111", None, None): ("jal", "J-Type"),
+            # custom
+            ("1111100", "000", "0000000"): ("mul", "Bonus-Type"), 
+            ("1111101", "000", "0000000"): ("rst", "Bonus-Type"), 
+            ("1111110", "000", "0000000"): ("halt", "Bonus-Type"), 
+            ("1111111", "000", "0000000"): ("rvrs","Bonus-Type")  
         }
 
     @staticmethod
@@ -120,7 +103,6 @@ class Simul:
 
     @staticmethod
     def alu(val1, val2, funct3):
-        # print(funct3)
         '''ALU operations'''
         if funct3 == '000':  # add/addi
             return val1 + val2
@@ -149,7 +131,7 @@ class Simul:
         with open(filename, 'a') as f:
             f.write(col + '\n')
 
-    def test_printrow(self,filename):
+    def test_printrow(self, filename):
         pc = self.PC
         col = str(pc) + ' '
         for reg in range(32):
@@ -169,9 +151,9 @@ class Simul:
                 final_val = Simul.prep_string(dec_bin_s(val, 32))
                 f.write(hex_addr + ':' + final_val + '\n')
 
-    def write_test_data_memory(self,filename):
+    def write_test_data_memory(self, filename):
         '''Writes final state of complete data memory in readable format'''
-        with open(filename,'a') as f:
+        with open(filename, 'a') as f:
             for x in range(65536, 65536 + (32*4), 4):
                 addr = f'000{dec_hex(x)}'
                 val = self.data_memory[addr]
@@ -181,23 +163,60 @@ class Simul:
     def instr_type(self, instr_ip):
         '''Returns a tuple with (instruction_name,instruction_type)'''
         opcode = instr_ip[-7:]
-        funct3 = instr_ip[-15:-12]
-        funct7 = instr_ip[0:7] if opcode == '0110011' else None
+        funct3 = instr_ip[-15:-12] if len(instr_ip) >= 15 else None
+        funct7 = instr_ip[0:7] if len(instr_ip) >= 32 else None
 
         if (opcode, funct3, funct7) in self.riscv_encoding_map:
             return self.riscv_encoding_map[(opcode, funct3, funct7)]
+        
         elif (opcode, funct3, None) in self.riscv_encoding_map:
             return self.riscv_encoding_map[(opcode, funct3, None)]
+        
         elif (opcode, None, None) in self.riscv_encoding_map:
             return self.riscv_encoding_map[(opcode, None, None)]
+        
+        elif opcode in ['1111100', '1111101', '1111110', '1111111']:
+            if opcode == '1111100':  # mul
+                return ("mul", "Bonus-Type")
+            elif opcode == '1111101':  # rst
+                return ("rst", "Bonus-Type")
+            elif opcode == '1111110':  # halt
+                return ("halt", "Bonus-Type")
+            elif opcode == '1111111':  # rvrs
+                return ("rvrs", "Bonus-Type")
+    
         else:
-            raise ValueError(f"Invalid instr:oc={opcode},f3={funct3},f7={funct7}")
+            raise ValueError(f"Invalid instruction: opcode={opcode}, funct3={funct3}, funct7={funct7}")
 
     def execute(self, instr):
         try:
             instr_name, instr_type = self.instr_type(instr)
-
-            if instr_type == 'R-Type':
+            
+            #bonus
+            if instr_type == "Bonus-Type":
+                if instr_name=='mul':
+                    rd = instr[20:25]
+                    rs1 = instr[12:17]
+                    rs2 = instr[7:12]
+                    self.register_values[rd] = self.register_values[rs1] * self.register_values[rs2]
+                    self.PC += 4
+            
+                elif instr_name == "rst":
+                    for reg in self.register_values:
+                        if reg != '00010':  
+                            self.register_values[reg] = 0
+                    self.PC += 4
+            
+                elif instr_name == "halt":
+                    return "halted"
+            
+                elif instr_name == "rvrs":
+                    register = instr[20:25]  
+                    self.register_values[register] = rvrs(self.register_values[register])
+                    self.PC += 4
+            
+            # Standard
+            elif instr_type == 'R-Type':
                 funct7 = instr[0:7]
                 rs2 = instr[7:12]
                 rs1 = instr[12:17]
@@ -245,7 +264,6 @@ class Simul:
 
                 elif instr_name == 'addi':
                     imm_dec = bin_dec(imm_val)
-                    # print(imm_dec)
                     self.register_values[rd] = self.alu(self.register_values[rs1], imm_dec, funct3)
                     self.PC += 4
 
@@ -259,7 +277,7 @@ class Simul:
 
                 # Sign extend the immediate value
                 imm_dec = bin_dec(imm_val)
-                addr =  self.register_values[rs1] + imm_dec
+                addr = self.register_values[rs1] + imm_dec
                 addr_hex = f'000{dec_hex(addr)}'
                 if addr_hex not in self.data_memory:
                         if addr not in range(0,381):
@@ -303,34 +321,23 @@ class Simul:
                 self.PC //= 2
                 self.PC *= 2
 
-            elif instr.startswith('rvrs'):
-                i, register = instr.split()
-                regbin = dec_bin_u(int(register), 5)
-                self.register_values[regbin] = rvrs(self.register_values[regbin])
-                self.PC += 4
-
-
             else:
                 raise ValueError(f"Unsupported instruction type: {instr_type}")
-
+    
+            
         except Exception as e:
-            # print(f"Error executing instruction {instr}: {str(e)}")
-            # print(f"Instruction Type: {instr_type}, Instruction Name: {instr_name}")
-            raise Exception(f"Error executing instruction {instr}: {str(e)} \nInstruction Type: {instr_type}, Instruction Name: {instr_name}")
+            raise Exception(f"Error executing instruction {instr}: {str(e)}")
 
 
-def main(input_file, output_file,output_readable_file):
-
+def main(input_file, output_file, output_readable_file):
     try:
         sim = Simul.load_file(input_file)
-        # print(f"Loaded {len(sim.instructions)} instructions")
         with open(output_file, 'w') as f:
             f.write('')
         with open(output_readable_file, 'w') as f:
             f.write('')
 
         while sim.PC < len(sim.instructions) * 4:
-
             current_instr = sim.instructions[(sim.PC // 4)]
             terminate = sim.execute(current_instr)
             sim.register_values['00000'] = 0
@@ -347,6 +354,7 @@ def main(input_file, output_file,output_readable_file):
 
     except Exception as e:
         print(f"Error in simulation: {str(e)}")
+
 
 if __name__ == '__main__':
     input_file = None
@@ -368,4 +376,4 @@ if __name__ == '__main__':
         print("Usage: python r5_test.py [input_file output_file]")
         sys.exit(1)
 
-    main(input_file, output_file,output_readable_file)
+    main(input_file, output_file, output_readable_file)
