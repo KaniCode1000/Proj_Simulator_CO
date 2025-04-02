@@ -323,6 +323,7 @@ def main(input_file, output_file,output_readable_file):
 
             current_instr = sim.instructions[(sim.PC // 4)]
             terminate = sim.execute(current_instr)
+            sim.register_values['00000'] = 0
             if terminate == "terminate":
                 break
 
