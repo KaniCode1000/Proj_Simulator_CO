@@ -231,7 +231,8 @@ class Simul:
                     self.PC += 4
 
                 elif instr_name == 'jalr':
-                    self.register_values[rd] = self.PC + 4
+                    if rd != '00000':
+                        self.register_values[rd] = self.PC + 4
                     imm_dec = bin_dec(imm_val)
                     self.PC = (self.register_values[rs1] + imm_dec)
                     self.PC //= 2
@@ -287,7 +288,8 @@ class Simul:
                 imm_val = instr[0] + instr[12:20] + instr[11] + instr[1:11] + '0'
                 rd = instr[20:25]
                 imm_dec = bin_dec(imm_val)
-                self.register_values[rd] = self.PC + 4
+                if rd != '00000':
+                    self.register_values[rd] = self.PC + 4
 
                 self.PC += imm_dec
                 self.PC //= 2
