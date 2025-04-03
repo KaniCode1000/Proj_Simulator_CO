@@ -65,6 +65,9 @@ class Simul:
         self.PC = 0
         self.instructions = data
         self.data_memory = {f'000{dec_hex(x)}': 0 for x in range(65536, 65536 + (32*4), 4)}
+        #stack memory initialisation
+        for x in range(0,381,4):
+            self.data_memory[f'00000{('0'*(3-len(dec_hex(x))))+dec_hex(x)}'] = 0
         self.riscv_encoding_map = {
             ("0110011", "000", "0000000"): ("add", "R-Type"),
             ("0110011", "000", "0100000"): ("sub", "R-Type"),
