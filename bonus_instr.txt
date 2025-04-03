@@ -1,30 +1,27 @@
 *******input1.txt*******
-addi x9,x0,5
-addi x18,x0,2
-slt x6,x0,x5
-mul x1,x18,x9
-beq x0,x0,0
+addi s1,zero,5
+addi s2,zero,2
+slt t1,zero,t0
+mul ra,s2,s1
+beq zero,zero,0
 
 ********input2.txt*******
-addi x9,x0,5
-addi x18,x0,2
-slt x6,x0,x5
-rst x1,x18,x9
-beq x0,x0,0
+addi s1,zero,5
+addi s2,zero,2
+slt t1,zero,t0
+rst ra,s2,s1
+beq zero,zero,0
 
 **********input3.txt**********
-addi x9,x0,5
-addi x18,x0,2
-slt x6,x0,x5
-halt x1,x18,x9
-beq x0,x0,0
+addi s1,zero,5
+addi s2,zero,2
+slt t1,zero,t0
+halt ra,s2,s1
+beq zero,zero,0
 
 ********input4.txt**********
-addi x9,x0,5
-addi x18,x0,2
-slt x6,x0,x5
-rvrs x9,x18,x9
-beq x0,x0,0
-
-
-
+addi s1,zero,5
+addi s2,zero,2
+slt t1,zero,t0
+rvrs s1,s2,s1
+beq zero,zero,0
