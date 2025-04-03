@@ -174,17 +174,6 @@ class Simul:
         
         elif (opcode, None, None) in self.riscv_encoding_map:
             return self.riscv_encoding_map[(opcode, None, None)]
-        
-        elif opcode in ['1111100', '1111101', '1111110', '1111111']:
-            if opcode == '1111100':  # mul
-                return ("mul", "Bonus-Type")
-            elif opcode == '1111101':  # rst
-                return ("rst", "Bonus-Type")
-            elif opcode == '1111110':  # halt
-                return ("halt", "Bonus-Type")
-            elif opcode == '1111111':  # rvrs
-                return ("rvrs", "Bonus-Type")
-    
         else:
             raise ValueError(f"Invalid instruction: opcode={opcode}, funct3={funct3}, funct7={funct7}")
 
@@ -208,7 +197,7 @@ class Simul:
                     self.PC += 4
             
                 elif instr_name == "halt":
-                    return "halted"
+                    return "terminate"
             
                 elif instr_name == "rvrs":
                     register = instr[20:25]  
